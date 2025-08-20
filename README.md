@@ -8,17 +8,15 @@
 <h1 align="center">Linkleaf CLI</h1>
 
 <p align="center">
-  Read/write <a href="https://developers.google.com/protocol-buffers">Protocol Buffers</a> feeds for <code>linkleaf.v1</code>.
+  Manage <strong>protobuf-only</strong> Linkleaf feeds (<code>linkleaf.v1</code>) with a tiny Go CLI.
 </p>
 
 ---
 
 ## Overview
 
-`linkleaf` is a tiny Go tool that round-trips a **Linkleaf Feed** between:
-
-- **Binary protobuf** (`.pb`) – for compact, canonical publishing
-- **JSON** – for easy editing, diffs, and tooling
+`linkleaf` reads and writes a single **binary protobuf** file (`.pb`) containing a `linkleaf.v1.Feed`.
+There is **no JSON** anywhere—storage and I/O are **protobuf wire format only**.
 
 **Schema:** [`proto/linkleaf/v1/feed.proto`](proto/linkleaf/v1/feed.proto)
 **Go module:** `github.com/doriancodes/linkleaf-cli`
@@ -29,36 +27,56 @@
 ## Quick start
 
 ```bash
-# Clone and enter the repo
+# Clone and enter
 git clone https://github.com/doriancodes/linkleaf-cli.git
 cd linkleaf-cli
 
-# (1) Install the protobuf Go plugin (requires protoc installed on your system)
+# 1) Install protoc-gen-go (requires protoc installed on your system)
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 export PATH="$(go env GOPATH)/bin:$PATH"
 
-# (2) Generate Go code from the proto (source-relative output)
+# 2) Generate Go code from the proto (source-relative output)
 protoc -I=proto --go_out=paths=source_relative:. proto/linkleaf/v1/feed.proto
 
-# (3) Build the CLI
+# 3) Build the CLI
 go build -o linkleaf ./cmd/linkleaf
-
-# (4) Try it
-./linkleaf read testdata/example.pb | jq .
 ```
 
 ## Usage
 
 ```bash
-linkleaf – read/write Linkleaf Feed protobufs
+linkleaf – protobuf-only feed manager (linkleaf.v1)
 
 Usage:
-  linkleaf write <in.json> <out.pb>     JSON -> protobuf
-  linkleaf read  <in.pb>                protobuf -> JSON (to stdout)
+  linkleaf init  <file.pb> [-title "My Feed"] [-version 1]
+  linkleaf add   -file <file.pb> -title "..." -url "..." -date YYYY-MM-DD \
+                 [-summary "..."] [-tags a,b,c] [-via URL] [-id ID]
+  linkleaf list  <file.pb>
+  linkleaf print <file.pb>
 
 Notes:
-  - JSON uses proto field names (snake_case).
-  - "write" auto-fills:
-      * feed.generated_at = now (UTC, RFC3339)
-      * link.id if empty = sha256(url+"|"+date)[:12]
+  • Data is stored ONLY in protobuf binary files (.pb).
+  • "add" prepends links (newest first). If -id is empty: sha256(url+"|"+date)[:12].
+  • "init" creates the file if it doesn't exist; "add" will also create on demand.
+```
+
+## Examples
+
+```bash
+# Create a new feed (protobuf file)
+./linkleaf init feed.pb -title "My Links" -version 1
+
+# Add a link (written directly into feed.pb as protobuf)
+./linkleaf add -file feed.pb \
+  -title "Protobuf Best Practices" \
+  -url "https://developers.google.com/protocol-buffers/docs/best-practices" \
+  -date 2025-08-18 \
+  -tags protobuf,design
+
+# List links (human-readable output; data stays in protobuf)
+./linkleaf list feed.pb
+
+# Pretty text dump for inspection (still reads protobuf)
+./linkleaf print feed.pb
+
 ```

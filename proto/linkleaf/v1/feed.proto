@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package linkleaf.v1;
+
+// IMPORTANT: set this to your real module path!
+option go_package = "github.com/doriancodes/linkleaf-cli/proto/linkleaf/v1;v1";
+
+message Feed {
+  uint32 version = 1;
+  string title = 2;
+  // RFC3339 UTC (e.g., 2025-08-18T12:34:56Z), set when you publish.
+  string generated_at = 3;
+  repeated Link links = 4;
+}
+
+message Link {
+  // Stable short ID (e.g., hash(url + "|" + date)).
+  string id = 1;
+  string title = 2;
+  string url = 3;
+  string summary = 4;
+  repeated string tags = 5;
+  // YYYY-MM-DD
+  string date = 6;
+  // Optional attribution ("via" URL).
+  string via = 7;
+
+  // If you ever remove fields, reserve their numbers to avoid reuse.
+  // reserved 8, 9, 10;
+}
